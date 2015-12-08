@@ -3,5 +3,5 @@
 
 # Copyright 2015, 2016 Junko Tsuji
 
-__all__ = ["io", "kmer", "clip", "apred"]
+__all__ = ["io", "kmer", "apred", "afasta"]
 
