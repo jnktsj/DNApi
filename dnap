@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2015 Junko Tsuji
+# Copyright 2015, 2016 Junko Tsuji
 
 # Predict 3'adapter sequence from FASTQ input by counting kmers and
 # assembling more frequent kmers. For filtering less frequent kmers,
