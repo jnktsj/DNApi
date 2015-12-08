@@ -8,9 +8,11 @@ This direcotry contains the following example FASTQ files:
 ### `dnap`: Adapter prediction
 To predict the 3′ adapter sequence in `good.fq`, type:
 
-    $ dnap good.fq
-    # you will get:
-    # Predicted_3'adapter_1=TGGAATTCTCGGGTGCCAAGGAACTCC
+```shell
+ $ dnap good.fq
+ # you will get:
+ # Predicted_3'adapter_1=TGGAATTCTCGGGTGCCAAGGAACTCC
+```
 
 If you want to use different k-mer size and filtering rate,
 type:
