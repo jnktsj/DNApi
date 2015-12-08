@@ -8,12 +8,11 @@ the following two programs:
 * [`dnap`](https://github.com/jnktsj/DNApi#dnap-3-adapter-prediction)
   predicts 3′ adapter sequences from an input FASTQ.
 * [`dnai`](https://github.com/jnktsj/DNApi#dnai-iterative-3-adapter-search-and-quality-control)
-  searches optimal 3′ adapter sequences iteratively and performs
-  quality control for an input FASTQ with predicted or specified 3′
-  adapter sequences.
+  predicts 3′ adapter sequences iteratively and/or performs quality
+  control for an input FASTQ.
 
 For quick examples, see:
-[Examples](https://github.com/jnktsj/DNApi/examples/README.md)).
+[Examples](https://github.com/jnktsj/DNApi/examples/README.md).
 
 For other useful utilities, see:
 [Utilities](https://github.com/jnktsj/DNApi#utilities)
@@ -33,7 +32,7 @@ or
 `dnap` and `dnai` accept (un)compressed FASTQ files or redirected
 standard input (`stdin`) as an input.
 
-### `dnap`: 3′ adapter prediction
+### <font color='blue'>`dnap`: 3′ adapter prediction</font>
 `dnap` predicts 3′ adapter sequences *de novo* from an input FASTQ.
 #### Usage
 
@@ -51,17 +50,16 @@ specified with `-r`, the k-mer with the ratio will be discarded.
 ###### -a
 This option shows other predicted 3′adapter candidates (if any).
 
-### `dnai`: iterative 3′ adapter search and quality control
+### <font color='blue'>`dnai`: iterative 3′ adapter search and quality control</font>
 `dnai` searches 3′ adapter sequences iteratively and conducts quality
 control for an input FASTQ by mapping reads after adapter removal. If
 a 3′adapter sequence is specified with `-3`, the program only executes
 quality control using a given genome mapping command. `dnai` also maps
 reads without adapter removal to investigate whether the reads are
-already processed, or whether the reads are already mappable to the
-genome.
+already processed or mappable to the genome.
 
-`dnai` judges the quality of the input FASTQ is poor when the mapping
-rate is below 20%.
+`dnai` judges the input FASTQ quality is poor when the mapping rate is
+below 20%.
 #### Usage
 
     $ dnai [options] <mapping_cmd> <fastq>
@@ -143,14 +141,18 @@ directory in the current directory.
 ## Utilities
 In addition to `dnap` and `dnai`, there are potentially useful three
 programs in the `utils` directory:
-* `qual-offset` estimates ASCII-encoded quality score offsets of FASTQ
+
+###### `qual-offset`
+`qual-offset` estimates ASCII-encoded quality score offsets of FASTQ
   files.
-* `qual-trim` trims low quality bases in input FASTQ reads. The
+###### `qual-trim`
+`qual-trim` trims low quality bases in input FASTQ reads. The
   quality trimming algorithm in the program is the same as the one in
   BWA.
-* `to-fasta` removes specified 5′ and/or 3′ adapter sequences, merges
-  identical reads while retainig the counts, and writes the collapsed
-  reads as FASTA in standard output (`stdout`).
+###### `to-fasta`
+`to-fasta` removes specified 5′ and/or 3′ adapter sequences, merges
+identical reads while retainig the counts, and writes the collapsed
+reads as FASTA in standard output (`stdout`).
 
 To see the usage for each program, type:
 
