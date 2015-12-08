@@ -1,0 +1,105 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# Copyright 2015, 2016 Junko Tsuji
+
+# Perform quality trimming with the same algorithm as
+# bwa_trim_read() in bwaseqio.c, BWA. For Solexa quliaty,
+# the scores are converted to Phred quality for trimming.
+
+# Formula to convert Solexa quality to Phred quality is:
+# Phred = 10 * log_10(1 + 10 ** (Solexa / 10.0))
+
+# Formulas to calculate Phred and Solexa quality scores
+# from sequencing error probability are:
+# Phred  = -10 * log_10(P)
+# Solexa = -10 * log_10(P / (1 - P))
+
+import sys, os.path, re, signal
+from math import log10
+from optparse import OptionParser
+
+def calcQualScore(p, solexa):
+    if solexa:
+        d = 1.0 - p if not p else 1
+        return solexaToPhred(int(-10 * log10(p / d)))
+    else:
+        return int(-10 * log10(p))
+
+def qualTrim(opts, args):
+    from dnapilib.io import fileObject, fastqRecord
+
+    if opts.solexa:
+        opts.b = 64
+        func = lambda x: int(round(10 * log10(1 + 10 ** (x / 10.0))))
+    elif opts.illumina5:
+        func = lambda x: 0 if x == 2 else x
+    else:
+        func = lambda x: x
+
+    if opts.b not in (33, 64):
+        raise Exception("wrong quality score base")
+    if opts.l < 1:
+        raise Exception("specify longer read length")
+    if opts.p < 0 or opts.p > 1:
+        raise Exception("bad error probability cutoff")
+    if not opts.solexa and opts.q < 0:
+        raise Exception("bad quality score cutoff")
+
+    if opts.q: cutoff = opts.q
+    else:      cutoff = calcQualScore(opts.p, opts.solexa)
+
+    base = opts.b
+    minlen = opts.l
+    ns = re.compile('N', re.IGNORECASE)
+    fastqs = fastqRecord(fileObject(args[0]))
+    for read in fastqs:
+        read = read.rstrip().split("\n")
+        qual = read[3]
+        s, max_s = 0, 0
+        max_i = len(read[3])
+        if minlen > max_i: continue
+        for i in reversed(xrange(max_i)):
+            q = func(ord(qual[i]) - base)
+            s += cutoff - q
+            if s < 0: break
+            if s > max_s: max_s, max_i = s, i
+        read[1] = read[1][:max_i]
+        read[3] = read[3][:max_i]
+        n_num = len(ns.findall(read[1]))
+        if n_num < len(read[1]) and len(read[1]) >= minlen:
+            print "\n".join(read)
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    usage = "%prog [options] <fastq>"
+    description = "Perform quality trimming for single-end reads."
+
+    op = OptionParser(usage=usage, description=description)
+
+    op.add_option("-b", type="int", metavar="BASE", default=33,
+                  help="ASCII-encoded quality offset, e.g. 33 or 64 (default=%default)")
+    op.add_option("-p", type="float", metavar="PROB", default=0.1,
+                  help="error probability cutoff (default=%default)")
+    op.add_option("-q", type="int", metavar="SCORE", default=0,
+                  help="quality score cutoff (default='-p 0.1')")
+    op.add_option("-l", type="int", metavar="BP", default=16,
+                  help="minimum read length in bp (default=%default)")
+    op.add_option("--illumina5", action="store_true",
+                  help="Illumina 1.5+ encoding marked with 'B'")
+    op.add_option("--solexa", action="store_true",
+                  help="Solexa encoding")
+
+    (opts, args) = op.parse_args()
+
+    if len(args) != 1:
+        op.error("input fastq")
+    try:
+        # make dnapilib visible
+        module = os.path.dirname(os.path.dirname(sys.argv[0]))
+        sys.path.append(module)
+        qualTrim(opts, args)
+    except KeyboardInterrupt: pass
+    except Exception, e:
+        prog = os.path.basename(sys.argv[0])
+        sys.exit(prog + ": error: " + str(e))

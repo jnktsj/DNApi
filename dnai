@@ -1,0 +1,230 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# Copyright 2015, 2016 Junko Tsuji
+
+# Evaluate input 3'adapter(s) or search an optimal 3'adapter in
+# an exhaustive manner. After predicting a candidate 3'adapter,
+# this program further maps reads to the genome. The 3'adapter
+# that has more reads mapped to the genome will be selected as
+# an optimal 3'adapter. If the fraction of mapped reads with
+# the optimal 3' adapter is lower than 0.2, the program judges
+# the library quality is poor.
+
+import sys, os.path, fileinput, uuid, subprocess, re, signal
+from optparse import OptionParser, OptionGroup
+
+from dnapilib.io import fileObject, fastqRecord
+from dnapilib.apred import adapterPrediction
+from dnapilib.afasta import toFasta
+
+def cleanUp(temp):
+    if os.path.exists(temp):
+        cmd = "rm -r %s" % temp
+        subprocess.call(cmd.split())
+
+def warningMessage(s, l):
+    err = sys.stderr.write
+    err("warning: predicted adapter is too short (<%d): '%s'\n" % (l, s))
+    err("warning: '%s' will not be investigated\n" % s)
+
+def checkInterval(strIn):
+    s = strIn.split(":")
+    if len(s) != 3:
+        raise Exception("bad interval %s" % strIn)
+    for n in s:
+        try:
+            float(n)
+        except ValueError:
+            raise Exception("bad component '%s' in %s" % (n, strIn))
+
+def checkOption(opts):
+    if opts.l <= 0: raise Exception("bad value: -l")
+    if opts.m <= 0: raise Exception("bad value: -m")
+    if opts.x <= 0: raise Exception("bad value: -x")
+    if opts.trim_3p < 0: raise Exception("bad value: --trim-3p")
+    if opts.trim_5p < 0: raise Exception("bad value: --trim-5p")
+    if opts.m == opts.x:
+        raise Exception("bad read length cutoff range")
+    if opts.p <= 0 or 1 < opts.p:
+        raise Exception("bad subsampling fraction")
+    checkInterval(opts.k)
+    checkInterval(opts.r)
+
+def checkInput(cmd):
+    soft = os.path.expanduser(cmd.split()[0])
+    if os.path.dirname(soft):
+        if not os.path.exists(soft):
+            raise Exception("can't find %s" % soft)
+    else:
+        which = "which %s" % soft
+        try:
+            subprocess.call(which.split())
+        except OSError:
+            raise Exception("can't find %s" % soft)
+    if not re.findall("@in", cmd):
+        raise Exception("can't locate input argument: @in")
+    if not re.findall("@out", cmd):
+        raise Exception("can't locate output argument: @out")
+
+def fastqInputPrep(fq, ratio, temp):
+    num = int(1.0/ratio)  # subsampling variable
+    rcnt, rd = 0.0, {}   # read count/length stats
+    fqIn = "%s/input.fq" % temp
+    f = open(fqIn, "w")
+    fqObj = fileObject(fq)
+    for i, rec in enumerate(fastqRecord(fqObj)):
+        if i % num == 0:
+            f.write(rec)
+            rcnt += 1
+            l = len(rec.split("\n")[1])
+            rd[l] = rd.get(l, 0) + 1
+    f.close()
+    fqObj.close()
+    mean = sum([l * c for l, c in rd.items()]) / rcnt
+    sd = (sum([(l-mean)**2 * c for l, c in rd.items()]) / rcnt)**0.5
+    return fqIn, rcnt, sd
+
+def generateInterval(inStr, isInt=True):
+    s = inStr.split(":")
+    beg, end, interval = map(int, s) if isInt else map(float, s)
+    while beg < end:
+       yield beg
+       beg += interval
+    yield end
+
+def countMappedReadSam(samOut):
+    if not os.path.exists(samOut):
+        raise Exception("can't open SAM")
+    mapped = set()
+    for x in fileinput.input(samOut):
+        if not x or x.startswith("@"): continue
+        x = x.rstrip().split("\t")
+        if x[2] != '*': mapped.add(x[0])
+    cnt = sum([int(n.split('_')[1]) for n in mapped])
+    return cnt
+
+def mapCleanReads(fqIn, aIn, tm5, tm3, clipMin, clipMax, cmd, temp):
+    faOut = "%s/insert.fa" % temp
+    samOut = "%s/output.sam" % temp
+    clipped = toFasta(fqIn, faOut, aIn, tm5, tm3, clipMin, clipMax)
+    cmd = cmd.replace("@in",faOut).replace("@out",samOut)
+    cmd += " 2> /dev/null"  # slurp stderr
+    if subprocess.call(cmd, shell=True) != 0:
+        raise Exception("mapping failed, check command line")
+    mapped = countMappedReadSam(samOut)
+    return clipped, mapped
+
+def makeReport(table, ar, p, sd):
+    out = ["# Report: sampled_reads=%d (total_reads * %.2f)" % (ar, p)]
+    header = [ "# 3'adapter",
+               "reads_extracted",
+               "(reads_extracted/sampled_reads)%",
+               "reads_mapped",
+               "(reads_mapped/sampled_reads)%",
+               "params_k:r" ]
+    out.append("\t".join(header))
+    maxValue, maxIndex = -1, -1
+    for i, x in enumerate(table):
+        if x[3] > maxValue: # mapped read counts
+            maxValue, maxIndex = x[3], i
+        out.append("%s\t%d\t%.2f\t%d\t%.2f\t%s" % tuple(x))
+    optimal = table[maxIndex][0]
+    if table[maxIndex][4] < 20: # QC cutoff
+        optimal += "/POOR_QUALITY"
+    if optimal == "RAW_INPUT":
+        if sd > 0:
+            out.append("# Input reads look already clean!")
+        else:
+            optimal += "?"
+    print "Optimal_3'adapter=%s\n" % optimal
+    print '\n'.join(out)
+
+def dnaiMain(opts, cmd, fastq, temp):
+    checkOption(opts)
+    checkInput(cmd)
+    subprocess.call(("mkdir %s" % temp).split())
+
+    fqIn, rcnt, sd = fastqInputPrep(fastq, opts.p, temp)
+
+    if opts.seq:
+        adapts = set(opts.seq.split(","))
+        setstr = ["user-input" for aIn in adapts]
+    else:
+        params = {}
+        sample_num = 50000  # subsampling for adapter prediction
+        for kIn in generateInterval(opts.k):
+            for rIn in generateInterval(opts.r, False):
+                aseq = adapterPrediction(fqIn, rIn, kIn, sample_num)[0][0]
+                aIn = aseq[:opts.l + 5] # store 5nt-longer adapter to print
+                if len(aIn) < opts.l:
+                    warningMessage(aIn, opts.l)
+                    continue
+                params.setdefault(aIn, []).append("%d:%.1f" % (kIn,rIn))
+        adapts = params.keys()
+        setstr = [';'.join(s) for s in params.values()]
+        adapts.append("RAW_INPUT")
+        setstr.append("NO_TREATMENT")
+
+    table = []
+    for i, aIn in enumerate(adapts):
+        aS = aIn[:opts.l] if aIn != "RAW_INPUT" else "RAW_INPUT"
+        cnts = mapCleanReads(fqIn, aS, opts.trim_5p, opts.trim_3p,
+                             opts.m, opts.x, cmd, temp)
+        rs = [rc / rcnt * 100 for rc in cnts]  # read stats
+        table.append([aIn, cnts[0], rs[0], cnts[1], rs[1], setstr[i]])
+    makeReport(table, rcnt, opts.p, sd)
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    usage = "%prog [options] <mapping_cmd> <fastq>"
+    description = "Evaluate candidate 3'adapters or search 3'adapters in an exhaustive manner."
+
+    op = OptionParser(usage=usage, description=description)
+
+    a_op = OptionGroup(op, "Adapter removal (default settings)")
+    a_op.add_option("-l", metavar="BP", default=7, type="int",
+                    help="3'adapter match length in bp (%default)")
+    a_op.add_option("-m", metavar="BP", default=16, type="int",
+                    help="minimum read length to keep for mapping (%default)")
+    a_op.add_option("-x", metavar="BP", default=36, type="int",
+                    help="maximum read length to keep for mapping (%default)")
+    a_op.add_option("--trim-5p", metavar="BP", type="int", default=0,
+                    help="trim specified number of bases from 5'ends after adapter removal (off)")
+    a_op.add_option("--trim-3p", metavar="BP", type="int", default=0,
+                    help="trim specified number of bases from 3'ends after adapter removal (off)")
+
+    e_op = OptionGroup(op, "Evaluation of candidate adapters")
+    e_op.add_option("-3", dest="seq", metavar="SEQ1,SEQ2,...",
+                    help="comma-separated list of 3'adapters")
+
+    b_op = OptionGroup(op, "Exhaustive adapter search (default settings)")
+    b_op.add_option("-p", metavar="FLOAT", default=1.0, type="float",
+                    help="subsampling fraction of reads (%default)")
+    b_op.add_option("-k", metavar="BEG:END:INT", default="9:11:2",
+                    help="kmers to predict 3'adapters (%default)")
+    b_op.add_option("-r", metavar="BEG:END:INT", default="1.2:1.4:0.1",
+                    help="filtering ratios for less abundant kmers (%default)")
+    b_op.add_option("--temp", metavar="PATH", default=".",
+                    help="path to make the temporary directory (%default)")
+
+    op.add_option_group(a_op)
+    op.add_option_group(e_op)
+    op.add_option_group(b_op)
+    (opts, args) = op.parse_args()
+    temp = opts.temp + '/dnai_tmp_' + str(uuid.uuid4())
+
+    if len(args) != 2:
+        op.error("input 2 required arguments")
+
+    try:
+        path = os.path.dirname(sys.argv[0])
+        dnaiMain(opts, args[0], args[1], temp)
+    except KeyboardInterrupt:
+        cleanUp(temp)
+    except Exception, e:
+        prog = os.path.basename(sys.argv[0])
+        cleanUp(temp)
+        sys.exit(prog + ": error: " + str(e))
+    finally:
+        cleanUp(temp)

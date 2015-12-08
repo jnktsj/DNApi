@@ -1,0 +1,150 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# Copyright 2015, 2016 Junko Tsuji
+
+# Clip off adapters from reads in FASTQ by searching kmer
+# exact prefix matches. There is an option '-s' that tries
+# to find prefix matches in length of (k + 1) nucleotides
+# with 1 mismatch if perfect prefix matches are not found.
+# After adapter removal, the program tallies clean reads
+# and writes non-redundant reads with the counts in FASTA.
+
+import sys, os.path, re, signal
+from optparse import OptionParser
+from operator import itemgetter
+
+def makeRegex(aSeq, aLen, is_3prime, sensitive):
+    if not aSeq: return None, None
+
+    cutoff = aLen if not sensitive else aLen + 1
+    if len(aSeq) < cutoff:
+        message = "input adapters longer than %d nt"
+        raise Exception(message % (cutoff-1))
+
+    aSeq = aSeq.upper().replace('U', 'T')
+    if is_3prime:
+        pat = "(.*)"
+        pSeq, mSeq = aSeq[:aLen], aSeq[:aLen+1]
+        beg, end = 0, aLen
+    else:
+        pat = "(.*?)"
+        pSeq, mSeq = aSeq[-aLen:], aSeq[-(aLen+1):]
+        beg, end = 1, aLen+1
+
+    pp = re.compile(pat+pSeq, re.IGNORECASE)
+    if not sensitive: return pp, []  # perfect match only
+    mp = []
+    seed = list(mSeq)
+    for i in range(beg, end):
+        ps = seed[:]
+        ps[i] = '.'
+        x = re.compile(pat+''.join(ps), re.IGNORECASE)
+        mp.append(x)
+    return pp, mp  # perfect match and mismatch
+
+def matchAdapters(seq, pp, mps, sensitive, pi=0, mi=0, l=0):
+    if not pp: return l, '*'
+
+    p = pp.search(seq)
+    if p:     return (p.end()-pi), '0'
+
+    if not sensitive: return l, '*'
+    else:
+        for mp in mps:
+            m = mp.search(seq)
+            if m: return (m.end()-mi), '1'
+    return l, '*'
+
+def toFasta(opts, args):
+    from dnapilib.io import fileObject, fastqSequence
+
+    if opts.m <= 0: raise Exception("bad value: -m")
+    if opts.x <= 0: raise Exception("bad value: -x")
+    if opts.m == opts.x:
+        raise Exception("bad read length cutoff range")
+    if not opts.f and not opts.b:
+        raise Exception("input adapter sequence")
+    if opts.f == opts.b:
+        raise Exception("5' and 3' adapters are same sequences")
+    if opts.seed_5p <= 0: raise Exception("bad value: --seed-5p")
+    if opts.seed_3p <= 0: raise Exception("bad value: --seed-3p")
+    if opts.trim_3p < 0:
+        raise Exception("input positive value for 3'trimming")
+    if opts.trim_5p < 0:
+        raise Exception("input positive value for 5'trimming")
+
+    fSeq, fLen = opts.f, opts.seed_5p
+    bSeq, bLen = opts.b, opts.seed_3p
+    if not fSeq and bSeq:
+        req = lambda x, y: y != '*' or opts.a
+    elif fSeq and bSeq:
+        if opts.B:
+            req = lambda x, y: x != '*' and y != '*' or opts.a
+        else:
+            req = lambda x, y: x != '*' or y != '*' or opts.a
+    elif fSeq and not bSeq:
+        req = lambda x, y: x != '*' or opts.a
+
+    f_pp, f_mp = makeRegex(fSeq, fLen, False, opts.s)
+    b_pp, b_mp = makeRegex(bSeq, bLen, True,  opts.s)
+
+    fas = {}
+    for seq in fastqSequence(fileObject(args[0])):
+        seqLen = len(seq)
+        f_i, f_mm = matchAdapters(seq, f_pp, f_mp, opts.s)
+        b_i, b_mm = matchAdapters(seq, b_pp, b_mp, opts.s,
+                                  bLen, bLen+1, seqLen)
+        ins = seq[f_i+opts.trim_5p : b_i-opts.trim_3p]
+        insLen = len(ins)
+        if req(f_mm, b_mm) and (opts.m <= insLen and insLen <= opts.x):
+            fas[ins] = fas.get(ins, 0) + 1 # tally sequence
+
+    fas = sorted(fas.items(), key=itemgetter(0))
+    for seq, cnt in fas:  # output FASTA
+        print ">%s_%d\n%s" % (seq, cnt, seq)
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    usage = "%prog [options] <fastq>"
+    description = "Remove adapters and collapse reads from FASTQ to FASTA"
+
+    op = OptionParser(usage=usage, description=description)
+
+    op.add_option("-3", dest="b", metavar="SEQ",
+                  help="3'adapter sequence")
+    op.add_option("-5", dest="f", metavar="SEQ",
+                  help="5'adapter sequence")
+    op.add_option("--trim-5p", metavar="BP", type="int", default=0,
+                  help="trim specified number of bases from 5'ends")
+    op.add_option("--trim-3p", metavar="BP", type="int", default=0,
+                  help="trim specified number of bases from 3'ends")
+    op.add_option("--seed-5p", metavar="BP", default=7, type="int",
+                  help="5' adapter match length in bp (default=%default)")
+    op.add_option("--seed-3p", metavar="BP", default=7, type="int",
+                  help="3' adapter match length in bp (default=%default)")
+    op.add_option("-m", metavar="BP", default=16, type="int",
+                  help="minimum read length in bp (default=%default)")
+    op.add_option("-x", metavar="BP", default=36, type="int",
+                  help="maximum read length in bp (default=%default)")
+    op.add_option("-s", action="store_true",
+                  help="sensitive adapter search with 1 mismatch (default=off)")
+    op.add_option("-B", action="store_true",
+                  help="only print the reads with both 5' and 3' adapter matches")
+    op.add_option("-a", action="store_true",
+                  help="print all reads with and without adapter matches if the reads are in the range specified with '-m' and '-x'")
+
+    (opts, args) = op.parse_args()
+
+    if len(args) != 1:
+        op.error("input fastq")
+
+    try:
+        # make dnapilib visible
+        module = os.path.dirname(os.path.dirname(sys.argv[0]))
+        sys.path.append(module)
+        toFasta(opts, args)
+    except KeyboardInterrupt: pass
+    except Exception, e:
+        prog = os.path.basename(sys.argv[0])
+        sys.exit(prog + ": error: " + str(e))

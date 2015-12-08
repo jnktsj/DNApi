@@ -1,0 +1,52 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# Copyright 2015, 2016 Junko Tsuji
+
+# Guess fastq quality encoding offset by checking the range
+# of the ASCII-encoded quality scores in FASTQ.
+
+import sys, os.path, signal, subprocess
+from optparse import OptionParser
+
+def qualOffset(opts, args):
+    from dnapilib.io import fileObject, fastqQuality
+
+    platform = [ ('Sanger/Illumina-1.8+', 33,  76, 33),
+                 ('Illumina-1.5+',        67, 104, 64),
+                 ('Illumina-1.3+',        54, 104, 64),
+                 ('Solexa',               59, 104, 64) ]
+    qChars = set()
+    sample_num = 50000
+    fastqs = fastqQuality(fileObject(args[0]))
+    for i, quality in enumerate(fastqs):
+        if i == sample_num: break
+        qChars = qChars.union([q for q in quality])
+    qInt = sorted([ord(q) for q in qChars])
+    if len(qInt) == 1:
+        raise Exception("unknown quality encoding")
+    for pl in platform:
+        if pl[1] <= qInt[1] and qInt[-2] <= pl[2]:
+            print "%s:base=%d" % (pl[0], pl[3])
+            return
+    raise Exception("unknown quality encoding")
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    usage = "%prog <fastq>"
+    description = "Estimate quality score encoding."
+
+    op = OptionParser(usage=usage, description=description)
+    (opts, args) = op.parse_args()
+
+    if len(args) != 1:
+        op.error("input fastq")
+    try:
+        # make dnapilib visible
+        module = os.path.dirname(os.path.dirname(sys.argv[0]))
+        sys.path.append(module)
+        qualOffset(opts, args)
+    except KeyboardInterrupt: pass
+    except Exception, e:
+        prog = os.path.basename(sys.argv[0])
+        sys.exit(prog + ": error: " + str(e))
