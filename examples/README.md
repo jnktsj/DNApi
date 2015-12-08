@@ -9,17 +9,19 @@ This direcotry contains the following example FASTQ files:
 To predict the 3′ adapter sequence in `good.fq`, type:
 
 ```shell
- $ dnap good.fq
- # you will get:
- # Predicted_3'adapter_1=TGGAATTCTCGGGTGCCAAGGAACTCC
+$ dnap good.fq
+# you will get:
+# Predicted_3'adapter_1=TGGAATTCTCGGGTGCCAAGGAACTCC
 ```
 
 If you want to use different k-mer size and filtering rate,
 type:
 
-    $ dnap -k 8 -r 1.1 good.fq
-    # you will get:
-    # Predicted_3'adapter_1=TGGAATTCTCGGGTGCCAAGGAACTC
+```shell
+$ dnap -k 8 -r 1.1 good.fq
+# you will get:
+# Predicted_3'adapter_1=TGGAATTCTCGGGTGCCAAGGAACTC
+```
 
 Adapter search with lower k-mer sizes and lower filtering rates would
 be lenient and would lead to (mostly) less accurate results.
@@ -34,9 +36,11 @@ To generate the genome index, download human genome ([hg38]
 (http://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/analysisSet/hg38.analysisSet.chroms.tar.gz)),
 and then:
 
-    # concatenate all chromosomes into one file
-    cat *.fa > hg38.fa
-    bowtie-build hg38.fa <index_name>
+```shell
+# concatenate all chromosomes into one file
+cat *.fa > hg38.fa
+bowtie-build hg38.fa <index_name>
+```
 
 ##### Case 1: `good.fq`
 With the following command:
