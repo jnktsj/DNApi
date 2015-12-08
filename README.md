@@ -12,7 +12,7 @@ the following two programs:
   control for an input FASTQ.
 
 For quick examples, see:
-[Examples](https://github.com/jnktsj/DNApi/examples)
+[Examples](https://github.com/jnktsj/DNApi/tree/master/examples#examples)
 
 For other useful utilities, see:
 [Utilities](https://github.com/jnktsj/DNApi#utilities)
