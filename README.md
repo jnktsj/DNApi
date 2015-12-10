@@ -12,7 +12,7 @@ the following two programs:
   control for an input FASTQ.
 
 If you want to integrate the adapter prediction algorithm into your
-program, see: [DNApi API](https://github.com/jnktsj/DNApi#dnapi_api)
+program, see: [API](https://github.com/jnktsj/DNApi#api)
 
 For quick examples, see:
 [Examples](https://github.com/jnktsj/DNApi/tree/master/examples#examples)
@@ -141,15 +141,14 @@ Path for the temporary directory. `dnai` creates a temporary directory
 during a computation. In the default setting, the program makes the
 directory in the current directory.
 
-## DNApi API
-
+## API
 You can access the adapter prediction algorithm once you import
 `dnapilib.apred` in your python program. `adapterPrediction` is the
-core function for adapter prediciton. It takes four arguments, a FASTQ
-file, filtering ratio, k-mer size, and subsampling read count. As the
-result, `adapterPrediction` returns the list of tuples containing
+core function for adapter prediciton. It takes four arguments: FASTQ
+file name, filtering ratio, k-mer size, and subsampling read count. As
+the result, `adapterPrediction` returns the list of tuples containing
 predicted 3′ adapters and the assembly scores. The returned list is
-sorted by scores.
+sorted by the scores.
 
 ```python
 from dnapilib.apred import adapterPrediction
