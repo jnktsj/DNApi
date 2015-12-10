@@ -11,6 +11,9 @@ the following two programs:
   predicts 3′ adapter sequences iteratively and/or performs quality
   control for an input FASTQ.
 
+If you want to integrate the adapter prediction algorithm into your
+program, see: [DNApi API](https://github.com/jnktsj/DNApi#dnapi_api)
+
 For quick examples, see:
 [Examples](https://github.com/jnktsj/DNApi/tree/master/examples#examples)
 
@@ -137,6 +140,32 @@ end, and `INT` is an interval of the ratios. The default is
 Path for the temporary directory. `dnai` creates a temporary directory
 during a computation. In the default setting, the program makes the
 directory in the current directory.
+
+## DNApi API
+
+You can access the adapter prediction algorithm once you import
+`dnapilib.apred` in your python program. `adapterPrediction` is the
+core function for adapter prediciton. It takes four arguments, a FASTQ
+file, filtering ratio, k-mer size, and subsampling read count. As the
+result, `adapterPrediction` returns the list of tuples containing
+predicted 3′ adapters and the assembly scores. The returned list is
+sorted by scores.
+
+```python
+from dnapilib.apred import adapterPrediction
+
+# adapterPrediction(FASTQ, ratio, k-mer, subsampleReadCount)
+adapts = adapterPrediction("examples/good.fq", 1.4, 9, 50000)
+
+# all predicted adapters
+print adapts
+# >> [('TGGAATTCTCGGGTGCCAAGGAACTCC', 913012)]
+
+# predicted adapter with the highest score
+print adapts[0][0]
+# >> 'TGGAATTCTCGGGTGCCAAGGAACTCC'
+```
+
 
 ## Utilities
 In addition to `dnap` and `dnai`, there are potentially useful three
