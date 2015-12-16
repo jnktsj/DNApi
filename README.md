@@ -20,6 +20,11 @@ For quick examples, see:
 For other useful utilities, see:
 [Utilities](https://github.com/jnktsj/DNApi#utilities)
 
+Of course, (sadly) there are some limitations for 3′ adapter
+prediction with DNApi although the software package gives better
+results than the others. For the information, see:
+[Limitations](https://github.com/jnktsj/DNApi#limitations)
+
 ## Requirement
 DNApi requires Python >=2.5 under a Linux/Unix environment.
 
@@ -186,3 +191,12 @@ To see the usage for each program, type:
 or
 
     $ <program-name> --help
+
+## Limitations
+DNApi has a few limitations on 3′ adapter prediction:
+* Poly(A) or other low-complexity 3′ adapters can't be predicted due
+  to the low-complexity k-mer filtering step
+* Prediction accuracy will drop if the gel-extracted lengths of RNAs
+  are long enough to be sequenced, i.e. if less 3′ adapters are in
+  FASTQ
+* DNApi can't do de-multiplexing
