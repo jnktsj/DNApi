@@ -197,4 +197,4 @@ DNApi has a few limitations on 3′ adapter prediction:
   to the low-complexity k-mer filtering step.
 * Prediction accuracy will drop if gel-extracted lengths of RNAs are
   long enough to be sequenced, i.e. if few 3′ adapters are in FASTQ.
-* DNApi can't do de-multiplexing.
+* DNApi can't do demultiplexing.
