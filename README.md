@@ -20,9 +20,9 @@ For quick examples, see:
 For other useful utilities, see:
 [Utilities](https://github.com/jnktsj/DNApi#utilities)
 
-Of course, (sadly) there are some limitations for 3′ adapter
-prediction with DNApi although the software package gives better
-results than the others. For the information, see:
+Of course, (sadly) there are some limitations on 3′ adapter prediction
+although DNApi gives better results than the others. For the
+information, see:
 [Limitations](https://github.com/jnktsj/DNApi#limitations)
 
 ## Requirement
