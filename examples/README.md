@@ -110,10 +110,10 @@ fi
 dnapi -p ${SUBSAMPLE_RATE} "${MAPCMD}" ${FASTQ}
 ````
 
-One caveat is that the output FASTA will be made based on subsampled
-reads. If you want to get all reads processed, you need to run `dnapi`
-without subsampling reads or run other software packages with the
-predicted adapter by `dnapi`.
+One caveat is that the output FASTA will be based on **only subsampled
+reads**. If you want to get all reads processed, you need to run
+`dnapi` without subsampling reads or run other software packages with
+the predicted adapter by `dnapi`.
 
 Although this example used [Bowtie](http://bowtie-bio.sourceforge.net)
 to map reads, you can try any command lines and read mapping software
