@@ -69,6 +69,9 @@ If the adapter was already clipped from the reads, you will get:
       RAW_INPUT     100000           100.00                            75031          75.03                         NO_TREATMENT
     # Input reads look already clean!
 
+Note that the FASTA output will not be generated because the input
+FASTQ were already processed.
+
 ##### Case 3: `poor.fq`
 When the quality of reads in a FASTQ is poor, you will get:
 
