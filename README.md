@@ -7,9 +7,9 @@ novo* to process any small RNA libraries. The package is composed of
 the following two programs:
 * [`dnap`](https://github.com/jnktsj/DNApi#dnap-3-adapter-prediction)
   predicts 3′ adapter sequences from an input FASTQ.
-* [`dnai`](https://github.com/jnktsj/DNApi#dnai-iterative-3-adapter-search-and-quality-control)
+* [`dnapi`](https://github.com/jnktsj/DNApi#dnapi-iterative-3-adapter-search-and-quality-control)
   predicts 3′ adapter sequences iteratively and/or performs quality
-  control for an input FASTQ.
+  control for an input FASTQ and output cleansed reads in FASTA format.
 
 If you want to integrate the adapter prediction algorithm into your
 program, see: [API](https://github.com/jnktsj/DNApi#api)
@@ -21,7 +21,7 @@ For other useful utilities, see:
 [Utilities](https://github.com/jnktsj/DNApi#utilities)
 
 Of course, (sadly) there are some limitations on 3′ adapter prediction
-although DNApi gives better results. For the information, see:
+although DNApi gives near-perfect results. For the information, see:
 [Limitations](https://github.com/jnktsj/DNApi#limitations)
 
 ## Requirement
@@ -30,13 +30,13 @@ DNApi requires Python >=2.5 under a Linux/Unix environment.
 ## Programs
 To see the usage for each program, type:
 
-    $ <dnap | dnai> -h
+    $ <dnap | dnapi> -h
 
 or
 
-    $ <dnap | dnai> --help
+    $ <dnap | dnapi> --help
 
-`dnap` and `dnai` accept (un)compressed FASTQ files or redirected
+`dnap` and `dnapi` accept (un)compressed FASTQ files or redirected
 standard input (`stdin`) as an input.
 
 ### `dnap`: 3′ adapter prediction
@@ -57,19 +57,21 @@ specified with `-r`, the k-mer with the ratio will be discarded.
 ###### -a
 This option shows other predicted 3′adapter candidates (if any).
 
-### `dnai`: iterative 3′ adapter search and quality control
-`dnai` searches 3′ adapter sequences iteratively and conducts quality
+### `dnapi`: iterative 3′ adapter search and quality control
+`dnapi` searches 3′ adapter sequences iteratively and conducts quality
 control for an input FASTQ by mapping reads after adapter removal. If
 a 3′adapter sequence is specified with `-3`, the program only executes
-quality control using a given genome mapping command. `dnai` also maps
-reads without adapter removal to investigate whether the reads are
-already processed or mappable to the genome.
+quality control using a given genome mapping command. `dnapi` also
+maps reads without adapter removal to investigate whether the reads
+are already processed or mappable to the genome. When `dnapi` judges
+the input FASTQ is not processed, the program outputs cleansed reads
+(i.e., reads trimmed 3′ adapters) in FASTA format.
 
-`dnai` judges the input FASTQ quality is poor when the mapping rate is
+`dnapi` judges the input FASTQ quality is poor when the mapping rate is
 below 20%.
 #### Usage
 
-    $ dnai [options] <mapping_cmd> <fastq>
+    $ dnapi [options] <mapping_cmd> <fastq>
 
 `<mapping_cmd>` is the genome mapping command to be tested.
 For this argument, any read mapping software package can be used. 
@@ -78,13 +80,13 @@ The requirements for this argument are:
 * Specify the input read filename as `@in`
 * Specify SAM as the output format for the mapping results
 * Specify the output SAM filename as `@out`
-* Pass `<mapping_cmd>` as a string in the command for `dnai`
+* Pass `<mapping_cmd>` as a string in the command for `dnapi`
 
 For example, when you want to use
 [Bowtie](http://bowtie-bio.sourceforge.net) as a mapping engine, the
-entire command line for `dnai` will be:
+entire command line for `dnapi` will be:
 
-    $ dnai "/path_to/bowtie /path_to/genome_index -p8 -v0 -k1 -S -f @in > @out" <fastq>
+    $ dnapi "/path_to/bowtie /path_to/genome_index -p8 -v0 -k1 -S -f @in > @out" <fastq>
 
 [Bowtie](http://bowtie-bio.sourceforge.net) options used:
 * `-p <int>`: Number of `<int>` CPUs
@@ -100,7 +102,7 @@ length specified by `-l` + 5nt.
 #### Options
 ##### Adapter removal
 ###### -l BP
-3′ adapter prefix match length. `dnai` only considers perfect adapter
+3′ adapter prefix match length. `dnapi` only considers perfect adapter
 matches. The default is 7nt. This option affects the length of
 predicted 3′ adapter sequences in the final output.
 ###### -m BP
@@ -122,13 +124,13 @@ trim down specific number of bases additionally.
 ##### Evaluation of 3′ adapter candidates
 ###### -3 SEQ1,SEQ2,...
 Comma-separated list of 3′ adapter(s) for quality control.  When the
-option is specified, `dnai` maps the processed reads after clipping
+option is specified, `dnapi` maps the processed reads after clipping
 each 3′ adapter in every run and checks the genome mapping rate.
 ##### Iterative 3′ adapter search
 ###### -p FLOAT
 Subsampling fraction of reads in an input FASTQ.  In the default,
-`dnai` uses all reads, i.e., `-p 1.0`.  Small read sets can make
-`dnai` faster.
+`dnapi` uses all reads, i.e., `-p 1.0`.  Small read sets can make
+`dnapi` faster.
 ###### -k BEG:END:INT
 K-mers to predict a 3′ adapter in the input FASTQ. `BEG` is the smallest
 k-mer to start, `END` is the largest k-mer to end, and `INT` is an
@@ -140,8 +142,13 @@ Cutoff ratios for filtering less abundant k-mers. As in option `-k`,
 end, and `INT` is an interval of the ratios. The default is
 `1.2:1.4:0.1`, i.e., from 1.2 to 1.4 in a 0.1 interval (r = 1.2, 1.3,
 1.4).
+###### -o PATH
+Output directory for cleansed reads. If the input FASTQ is not
+processed, `dnapi` removes predicted 3′ adapters from the reads and
+generates a FASTA file containing cleansed reads. In the default
+setting, `dnapi` creates the output in the current directory.
 ###### --temp PATH
-Path for the temporary directory. `dnai` creates a temporary directory
+Path for the temporary directory. `dnapi` creates a temporary directory
 during a computation. In the default setting, the program makes the
 directory in the current directory.
 
@@ -171,7 +178,7 @@ print adapts[0][0]
 
 
 ## Utilities
-In addition to `dnap` and `dnai`, there are potentially useful three
+In addition to `dnap` and `dnapi`, there are potentially useful three
 programs in the `utils` directory:
 
 * `qual-offset` estimates ASCII-encoded quality score offsets of FASTQ

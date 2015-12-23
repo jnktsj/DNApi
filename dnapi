@@ -105,7 +105,7 @@ def countMappedReadSam(samOut):
     return cnt
 
 def mapCleanReads(fqIn, aIn, tm5, tm3, clipMin, clipMax, cmd, temp):
-    faOut = "%s/insert.fa" % temp
+    faOut = "%s/insert_%s.fa" % (temp, aIn)
     samOut = "%s/output.sam" % temp
     clipped = toFasta(fqIn, faOut, aIn, tm5, tm3, clipMin, clipMax)
     cmd = cmd.replace("@in",faOut).replace("@out",samOut)
@@ -115,7 +115,7 @@ def mapCleanReads(fqIn, aIn, tm5, tm3, clipMin, clipMax, cmd, temp):
     mapped = countMappedReadSam(samOut)
     return clipped, mapped
 
-def makeReport(table, ar, p, sd):
+def makeReport(table, ar, p, l, sd, fq, outdir, temp):
     out = ["# Report: sampled_reads=%d (total_reads * %.2f)" % (ar, p)]
     header = [ "# 3'adapter",
                "reads_extracted",
@@ -137,8 +137,16 @@ def makeReport(table, ar, p, sd):
             out.append("# Input reads look already clean!")
         else:
             optimal += "?"
+    else:
+        aIn = optimal.split("/")[0][:l]
+        fqPrefix = os.path.basename(fq).split(".")[0]
+        faTmp = "%s/insert_%s.fa" % (temp, aIn)
+        faOut = "%s/%s_%s.fa" % (outdir, fqPrefix, aIn)
+        subprocess.call(("mv %s %s" % (faTmp, faOut)).split())
+        print "Cleansed_reads=%s" % faOut
     print "Optimal_3'adapter=%s\n" % optimal
     print '\n'.join(out)
+
 
 def dnaiMain(opts, cmd, fastq, temp):
     checkOption(opts)
@@ -173,7 +181,7 @@ def dnaiMain(opts, cmd, fastq, temp):
                              opts.m, opts.x, cmd, temp)
         rs = [rc / rcnt * 100 for rc in cnts]  # read stats
         table.append([aIn, cnts[0], rs[0], cnts[1], rs[1], setstr[i]])
-    makeReport(table, rcnt, opts.p, sd)
+    makeReport(table, rcnt, opts.p, opts.l, sd, fastq, opts.o, temp)
 
 if __name__ == "__main__":
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
@@ -205,6 +213,8 @@ if __name__ == "__main__":
                     help="kmers to predict 3'adapters (%default)")
     b_op.add_option("-r", metavar="BEG:END:INT", default="1.2:1.4:0.1",
                     help="filtering ratios for less abundant kmers (%default)")
+    b_op.add_option("-o", metavar="PATH", default=".",
+                    help="Output directory for cleansed reads (%default)")
     b_op.add_option("--temp", metavar="PATH", default=".",
                     help="path to make the temporary directory (%default)")
 
