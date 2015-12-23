@@ -49,6 +49,7 @@ With the following command:
 
 You will get:
 
+    Cleansed_reads=./good_TGGAATT.fa
     Optimal_3'adapter=TGGAATTCTCGG
 
     # Report: sampled_reads=100000 (total_reads * 1.00)
@@ -71,6 +72,7 @@ If the adapter was already clipped from the reads, you will get:
 ##### Case 3: `poor.fq`
 When the quality of reads in a FASTQ is poor, you will get:
 
+    Cleansed_reads=./poor_CGCCTTG.fa
     Optimal_3'adapter=CGCCTTGGCCGT/POOR_QUALITY
 
     # Report: sampled_reads=100000 (total_reads * 1.00)
@@ -104,6 +106,11 @@ fi
 # Input the subsample rate with -p to dnapi
 dnapi -p ${SUBSAMPLE_RATE} "${MAPCMD}" ${FASTQ}
 ````
+
+One caveat is that the output FASTA will be made based on subsampled
+reads. If you want to get all reads processed, you need to run `dnapi`
+without subsampling reads or run other software packages with the
+predicted adapter by `dnapi`.
 
 Although this example used [Bowtie](http://bowtie-bio.sourceforge.net)
 to map reads, you can try any command lines and read mapping software
