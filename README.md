@@ -9,7 +9,8 @@ the following two programs:
   predicts 3′ adapter sequences from an input FASTQ.
 * [`dnapi`](https://github.com/jnktsj/DNApi#dnapi-iterative-3-adapter-search-and-quality-control)
   predicts 3′ adapter sequences iteratively and/or performs quality
-  control for an input FASTQ and output cleansed reads in FASTA format.
+  control for an input FASTQ. The program also outputs cleansed reads
+  in FASTA format if the input FASTQ is not processed.
 
 If you want to integrate the adapter prediction algorithm into your
 program, see: [API](https://github.com/jnktsj/DNApi#api)
