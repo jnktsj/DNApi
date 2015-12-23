@@ -64,9 +64,12 @@ control for an input FASTQ by mapping reads after adapter removal. If
 a 3′adapter sequence is specified with `-3`, the program only executes
 quality control using a given genome mapping command. `dnapi` also
 maps reads without adapter removal to investigate whether the reads
-are already processed or mappable to the genome. When `dnapi` judges
-the input FASTQ is not processed, the program outputs cleansed reads
-(i.e., reads trimmed 3′ adapters) in FASTA format.
+are already processed or mappable to the genome.
+
+When `dnapi` judges the input FASTQ is not processed, the program
+outputs cleansed reads (i.e., reads trimmed 3′ adapters) in FASTA
+format. The reads in the output FASTA are non-redundant, and the read
+counts are written in FASTA headers.
 
 `dnapi` judges the input FASTQ quality is poor when the mapping rate is
 below 20%.
