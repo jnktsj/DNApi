@@ -26,8 +26,8 @@ $ dnap -k 8 -r 1.1 good.fq
 Adapter search with lower k-mer sizes and lower filtering rates would
 be lenient and would lead to (mostly) less accurate results.
 
-### `dnai`: Iterative adapter search and quality control
-`dnai` maps reads with a given mapping command after adapter removal.
+### `dnapi`: Iterative adapter search and quality control
+`dnapi` maps reads with a given mapping command after adapter removal.
 For the mapping step, let's prepare the reference genome index first.
 Although you can use any read mapping software packages for mapping,
 we will use [Bowtie](http://bowtie-bio.sourceforge.net) in this example.
@@ -45,7 +45,7 @@ bowtie-build hg38.fa <index_name>
 ##### Case 1: `good.fq`
 With the following command:
 
-    $ dnai "/path_to/bowtie /path_to/genome_index -p <cpu_num> -v0 -k1 -S -f @in > @out" good.fq
+    $ dnapi "/path_to/bowtie /path_to/genome_index -p <cpu_num> -v0 -k1 -S -f @in > @out" good.fq
 
 You will get:
 
@@ -81,11 +81,11 @@ When the quality of reads in a FASTQ is poor, you will get:
 Even if the predicted 3' adapter sequence is correct, `/POOR_QUALITY`
 will be attached when the mapping rate is below 20 for quality control.
 
-#### Tips for making `dnai` faster
-In the default setting, `dnai` processes all reads in an input FASTQ.
+#### Tips for making `dnapi` faster
+In the default setting, `dnapi` processes all reads in an input FASTQ.
 It is possible to make the computation faster if you subsample a
 portion of reads with `-p`. The following shell script snippet shows
-the example to use 1 million reads from an input FASTQ for `dnai` run.
+the example to use 1 million reads from an input FASTQ for `dnapi` run.
 
 ```shell
 # !/bin/sh
@@ -101,8 +101,8 @@ if [ ${TOTAL_READS} -gt ${SUBSAMPLE_READS} ]; then
     SUBSAMPLE_RATE=`echo ${SUBSAMPLE} ${TOTAL_READS} | awk '{print $1/$2}'`
 fi
 
-# Input the subsample rate with -p to dnai
-dnai -p ${SUBSAMPLE_RATE} "${MAPCMD}" ${FASTQ}
+# Input the subsample rate with -p to dnapi
+dnapi -p ${SUBSAMPLE_RATE} "${MAPCMD}" ${FASTQ}
 ````
 
 Although this example used [Bowtie](http://bowtie-bio.sourceforge.net)
