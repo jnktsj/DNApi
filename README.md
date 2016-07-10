@@ -42,12 +42,14 @@ or
 #### Prediction modes
 The package covers three ways (hereafter modes) to predict adapters.
 The prediction algorithm needs two main parameters
-[`-k`](https://github.com/jnktsj/DNApi#-k) (k-mer lengths) and
-[`-r`](https://github.com/jnktsj/DNApi#-r) (filtering ratio for less
-abundant kmers). The default is *iterative* mode with `-k 9:11:2` and
-`-r 1.2:1.4:0.1`.  The default setting already works well on any small
-RNA libraries, but you can tweak the parametes with `-k` and `-r` (For
-more detail, see [Options](https://github.com/jnktsj/DNApi#options)).
+[`-k`](https://github.com/jnktsj/DNApi#-k-kmer_begkmer_endincrement--kmer_len)
+(k-mer lengths) and
+[`-r`](https://github.com/jnktsj/DNApi#-r-ratio_begratio_endintcrement--ratio)
+(filtering ratio for less abundant kmers). The default is *iterative*
+mode with `-k 9:11:2` and `-r 1.2:1.4:0.1`.  The default setting
+already works well on any small RNA libraries, but you can tweak the
+parametes with `-k` and `-r` (For more detail, see
+[Options](https://github.com/jnktsj/DNApi#options)).
 
 ##### *Iterative* mode
 *Iterative* mode runs the algorithm multiple times with different
