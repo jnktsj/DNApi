@@ -26,11 +26,7 @@ DNApi requires Python 3.x under a Linux/Unix environment.
 ## Usage
 To see the usage for each program, type:
 
-    $ python3 dnapi.py -h
-
-or
-
-    $ python3 dnapi.py --help
+    $ python3 dnapi.py [-h | --help]
 
 DNApi accept (un)compressed FASTQ files or redirected standard input
 (`stdin`) as an input.
@@ -45,12 +41,13 @@ or
 
 #### Prediction modes
 The package covers three ways (hereafter modes) to predict adapters.
-The prediction algorithm needs two main parameters `-k` (k-mer
-lengths) and `-r` (filtering ratio for less abundant kmers). The
-default is *iterative* mode with `-k 9:11:2` and `-r 1.2:1.4:0.1`.
-The default setting already works well on any small RNA libraries, but
-you can tweak the parametes with `-k` and `-r` (For more detail, see
-[Options](https://github.com/jnktsj/DNApi#options)).
+The prediction algorithm needs two main parameters
+[`-k`](https://github.com/jnktsj/DNApi#-k) (k-mer lengths) and
+[`-r`](https://github.com/jnktsj/DNApi#-r) (filtering ratio for less
+abundant kmers). The default is *iterative* mode with `-k 9:11:2` and
+`-r 1.2:1.4:0.1`.  The default setting already works well on any small
+RNA libraries, but you can tweak the parametes with `-k` and `-r` (For
+more detail, see [Options](https://github.com/jnktsj/DNApi#options)).
 
 ##### *Iterative* mode
 *Iterative* mode runs the algorithm multiple times with different
@@ -72,7 +69,7 @@ running the algorithm multiple times with different combinations of
 incorporating adapter removal and read mapping. Only this mode can
 judge whether input libraries are already clean (i.e. the 3′ adapter
 sequences are already removed). To turn on this mode, you need to run
-with `--map-command`.
+with [`--map-command`](https://github.com/jnktsj/DNApi#--map-command-command).
 
     $ python3 dnapi.py --map-command <command> <fastq>
 
@@ -149,13 +146,13 @@ entire command line for DNApi will be:
 
 The results will be printed in standard output (`stdout`). The length
 of predicted 3′ adapter sequences will be the 3′ adapter prefix match
-length specified by `-l` + 5nt.
+length specified by `--prefix-match` + 5nt.
 
 ###### --subsample-rate FLOAT
 Subsampling fraction of reads in an input FASTQ for *exhaustive* mode.
-In the default, DNApi uses all reads, i.e., `--subsample-rate 1.0`.
+In the default, DNApi uses all reads (`--subsample-rate 1.0`).
 Small read sets can make DNApi faster (For more detail, see [Tips for
-making the exhaustive search mode fastar]
+making the exhaustive search mode faster]
 (https://github.com/jnktsj/DNApi/tree/master/examples#tips-for-making-the-exhaustive-search-mode-faster)).
 
 ###### --output-dir DIRECTORY
@@ -260,11 +257,8 @@ the `utils` directory:
 
 To see the usage for each program, type:
 
-    $ <program-name> -h
+    $ python3 <program-name> [-h | --help]
 
-or
-
-    $ <program-name> --help
 
 ## Limitations
 DNApi has a few limitations on 3′ adapter prediction:
