@@ -6,7 +6,7 @@ This direcotry contains the following example FASTQ files:
   contain any 3′ adapters
 
 
-### Iterative and single adapter prediction
+### Adapter prediction: *iterative* and *single* modes
 To predict the 3′ adapter sequence in `good.fq`, type:
 
 ```shell
@@ -14,7 +14,7 @@ $ python3 dnapi.py good.fq
 # you will get: TGGAATTCTCGG
 ```
 
-The default setting is *iterative search mode*. If you want to use
+The default setting is *iterative* search mode. If you want to use
 different k-mer sizes and filtering ratios, type:
 
 ```shell
@@ -22,8 +22,8 @@ $ python3 dnapi.py -k 8:11:1 -r 1.1:1.4:0.1 good.fq
 # you will get: TGGAATTCTCGG
 ```
 
-If you want to see all predicted candidates from the run,
-you can add `--show-all` like below:
+If you want to see all predicted adapter candidates from the run, you
+can add `--show-all` like below:
 
 ```shell
 $ python3 dnapi.py --show-all poor.fq
@@ -32,28 +32,27 @@ $ python3 dnapi.py --show-all poor.fq
 # AGCAGAAGGGG     score=30.25
 ```
 
-The option prints the predicted sequences with the assembly scores,
-and the higher score indicates more reliable predicted adapter
-sequences.
+The option prints the predicted adapter sequences with the assembly
+scores. The higher score indicates more reliable prediction results.
 
 If you want to use only a single combination of k-mer size and
-filtering ratio (i.e. *single search mode*), type:
+filtering ratio (i.e. *single* search mode), type:
 
 ```shell
 $ python3 dnapi.py -k 9 -r 1.4 good.fq
 # you will get: TGGAATTCTCGGGTGCCAAGGAACTCC
 ```
 
-Adapter search with lower k-mer sizes and lower filtering ratios would
-be lenient and would lead to (mostly) less accurate results.
+Adapter search with either lower k-mer sizes and lower filtering
+ratios gives you mostly less accurate results.
 
 
-### Exhaustive adapter search and quality control
+### Adapter search with mapping process and quality control: *exhaustive* mode
 DNApi executes a given mapping command for read mapping after adapter
-removal. Adding `--map-command` to arguments turns on this *exhaustive
-search mode*. For the mapping step, you need to prepare the reference
-genome index first. Although you can use any read mapping software
-packages for mapping, we will use
+removal. Adding `--map-command` to arguments turns on this
+*exhaustive* search mode. For the mapping step, you need to prepare
+the reference genome index first. Although you can use any read
+mapping software packages for mapping, we will use
 [Bowtie](http://bowtie-bio.sourceforge.net) in this example.
 
 To generate the genome index, download human genome ([hg38]
@@ -81,9 +80,9 @@ You will get:
       RAW_INPUT     100000           100.00                               65           0.07                         NO_TREATMENT
 
 Each run generates the above report and the cleansed reads as files in
-an output directory (default: dnapi_out). You can control the name of
-the output directory by `--output-dir` or suppress the output by
-`--no-output-files`.
+an output directory (default: `./dnapi_out`). You can control the path
+and the name of the output directory by `--output-dir` or suppress the
+output by `--no-output-files`.
 
 ##### Case 2: `processed.fq`
 If the adapter was already clipped from the reads, you will get:
