@@ -94,7 +94,7 @@ def parse_args():
     exhaop.add_argument("--no-output-files",
         action="store_true",
         help="only display report and suppress output files")
-    exhaop.add_argument("--temp-path",
+    exhaop.add_argument("--temp-dir",
         metavar="DIRECTORY",
         default="/tmp",
         help="place to make temporary directory (default: %(default)s)")
@@ -185,7 +185,7 @@ def main():
     else:
         global TEMP_DIR
         TEMP_DIR = "{}/DNApi_tmp_{}".format(
-            args.temp_path, str(uuid.uuid4()))
+            args.temp_dir, str(uuid.uuid4()))
         subprocess.call(("mkdir {}".format(TEMP_DIR)).split())
 
         original_fastq = fastq

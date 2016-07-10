@@ -1,19 +1,9 @@
-# DNApi <sub>(version: 1.0)<sub>
+# DNApi <sub>(version: 1.1)<sub>
 *de novo* adapter prediction (iterative) algorithm for small RNA sequencing data.
 
 ## Introduction
 DNApi is a software package that predicts 3′ adapter sequences *de
-novo* to process any small RNA libraries. The package is composed of
-the following two programs:
-* [`dnap`](https://github.com/jnktsj/DNApi#dnap-3-adapter-prediction)
-  predicts 3′ adapter sequences from an input FASTQ.
-* [`dnapi`](https://github.com/jnktsj/DNApi#dnapi-iterative-3-adapter-search-and-quality-control)
-  predicts 3′ adapter sequences iteratively and/or performs quality
-  control for an input FASTQ. The program also outputs cleansed reads
-  in FASTA format if the input FASTQ is not processed.
-
-If you want to integrate the adapter prediction algorithm into your
-program, see: [API](https://github.com/jnktsj/DNApi#api)
+novo* to process any small RNA libraries.
 
 For quick examples, see:
 [Examples](https://github.com/jnktsj/DNApi/tree/master/examples#examples)
@@ -21,76 +11,134 @@ For quick examples, see:
 For other useful utilities, see:
 [Utilities](https://github.com/jnktsj/DNApi#utilities)
 
+If you want to integrate the adapter prediction algorithm into your
+program, see: [API](https://github.com/jnktsj/DNApi#api)
+
 Of course, (sadly) there are some limitations on 3′ adapter prediction
 although DNApi gives near-perfect results. For the information, see:
 [Limitations](https://github.com/jnktsj/DNApi#limitations)
 
-## Requirement
-DNApi requires Python >=2.5 under a Linux/Unix environment.
 
-## Programs
+## Requirement
+DNApi requires Python 3.x under a Linux/Unix environment.
+
+
+## Usage
 To see the usage for each program, type:
 
-    $ <dnap | dnapi> -h
+    $ python3 dnapi.py -h
 
 or
 
-    $ <dnap | dnapi> --help
+    $ python3 dnapi.py --help
 
-`dnap` and `dnapi` accept (un)compressed FASTQ files or redirected
-standard input (`stdin`) as an input.
+DNApi accept (un)compressed FASTQ files or redirected standard input
+(`stdin`) as an input.
 
-### `dnap`: 3′ adapter prediction
-`dnap` predicts 3′ adapter sequences *de novo* from an input FASTQ.
-#### Usage
+You can simply run:
 
-    $ dnap [options] <fastq>
+    $ python3 dnapi.py <fastq>
+
+or
+
+    $ <process-generates-fastq> | python3 dnapi.py -
+
+#### Prediction modes
+The package covers three ways (hereafter modes) to predict adapters.
+The prediction algorithm needs two main parameters `-k` (k-mer
+lengths) and `-r` (filtering ratio for less abundant kmers). The
+default is *iterative* mode with `-k 9:11:2` and `-r 1.2:1.4:0.1`.
+The default setting already works well on any small RNA libraries, but
+you can tweak the parametes with `-k` and `-r` (For more detail, see
+[Options](https://github.com/jnktsj/DNApi#options)).
+
+##### *Iterative* mode
+*Iterative* mode runs the algorithm multiple times with different
+combinations of *k* and *R* and refines the ranks of predicted adapter
+candidates in subsequent iterations.
+
+    $ python3 dnapi.py -k 9:11:2 -r 1.2:1.4:0.1 <fastq>
+
+##### *Single* mode
+*Single* mode runs a single adapter prediction algorithm with a
+specific combination of *k* and *R*.
+
+    $ python3 dnapi.py -k 9 -r 1.4 <fastq>
+
+##### *Exaustive* mode
+*Exhaustive* mode exhaustively searches an optimal 3´ adapter by
+running the algorithm multiple times with different combinations of
+*k* and *R* to obtain a non-redundant list of adapter candidates, and
+incorporating adapter removal and read mapping. Only this mode can
+judge whether input libraries are already clean (i.e. the 3′ adapter
+sequences are already removed). To turn on this mode, you need to run
+with `--map-command`.
+
+    $ python3 dnapi.py --map-command <command> <fastq>
+
+You can also incorporate `-k` and `-r`. The default setting is
+`-k 9:11:2` and `-r 1.2:1.4:0.1`.
+
+This mode also outputs cleansed reads in FASTA format if the input
+FASTQ is not processed. The reads in the output FASTA are
+non-redundant, and the read counts are written in FASTA headers.
+
+If a 3′adapter sequence is specified with `--adapter-seq`, DNApi
+only executes quality control using a given genome mapping
+command.
+
+    $ python3 dnapi.py --map-command <command> --adapter-seq SEQ1 [SEQ2 SEQ3...] <fastq>
+
+DNApi judges the input FASTQ quality is poor when the mapping rate is
+below 20%.
+
 
 #### Options
-###### -k BP
-K-mer length to use to compute k-mer frequency in the input FASTQ.
-The default value is 9 nucleotides (nt).
-###### -r FLOAT
-Cutoff ratio for filtering less frequent k-mers. For each k-mer, a
+
+##### Adapter prediction parameters
+
+###### -k [KMER_BEG:KMER_END:INCREMENT | KMER_LEN]
+K-mer(s) to predict a 3′ adapter in the input FASTQ. When you specify
+the longer argument with ":", DNApi performs *iterative* mode.  In the
+longer argument, `KMER_BEG` is the smallest k-mer to start, `KNER_END`
+is the largest k-mer to end, and `INCREMENT` is an interval of the
+k-mers. The default is `9:11:2`, i.e., from 9mer to 11mer in a 2nt
+interval (k = 9, 11). When you specify a single k-mer length
+`KMER_LEN` with a single ratio (see `-r` below), DNApi runs *single*
+mode.
+
+###### -r [RATIO_BEG:RATIO_END:INTCREMENT | RATIO]
+Cutoff ratio(s) for filtering less frequent k-mers. For each k-mer, a
 ratio of the frequency of the most abundant k-mer to the frequency of
 a target k-mer will be computed. If a ratio is lower than the cutoff
-specified with `-r`, the k-mer with the ratio will be discarded.
-###### -a
+specified with `-r`, the k-mer with the ratio will be discarded. As in
+option `-k` for *iterative* search, `RATIO_BEG` is the smallest ratio
+to start, `RATIO_END` is the largest ratio to end, and `INCREMENT` is
+an interval of the ratios. The default is `1.2:1.4:0.1`, i.e., from
+1.2 to 1.4 in a 0.1 interval (r = 1.2, 1.3, 1.4). When you specify a
+single ratio `RATIO` with a single k-mer length, DNApi runs *single*
+mode.
+
+###### --show-all
 This option shows other predicted 3′adapter candidates (if any).
 
-### `dnapi`: iterative 3′ adapter search and quality control
-`dnapi` searches 3′ adapter sequences iteratively and conducts quality
-control for an input FASTQ by mapping reads after adapter removal. If
-a 3′adapter sequence is specified with `-3`, the program only executes
-quality control using a given genome mapping command. `dnapi` also
-maps reads without adapter removal to investigate whether the reads
-are already processed or mappable to the genome.
+##### Exhaustive adapter search with mapping process
 
-When `dnapi` judges the input FASTQ is not processed, the program
-outputs cleansed reads (i.e., reads trimmed 3′ adapters) in FASTA
-format. The reads in the output FASTA are non-redundant, and the read
-counts are written in FASTA headers.
-
-`dnapi` judges the input FASTQ quality is poor when the mapping rate is
-below 20%.
-#### Usage
-
-    $ dnapi [options] <mapping_cmd> <fastq>
-
-`<mapping_cmd>` is the genome mapping command to be tested.
+###### --map-command COMMAND
+`COMMAND` is the genome mapping command to be tested.
 For this argument, any read mapping software package can be used. 
 The requirements for this argument are:
 * Specify FASTA as the input read format
 * Specify the input read filename as `@in`
 * Specify SAM as the output format for the mapping results
 * Specify the output SAM filename as `@out`
-* Pass `<mapping_cmd>` as a string in the command for `dnapi`
+* Pass `COMMAND` as a string in the command for DNApi
 
 For example, when you want to use
 [Bowtie](http://bowtie-bio.sourceforge.net) as a mapping engine, the
-entire command line for `dnapi` will be:
+entire command line for DNApi will be:
 
-    $ dnapi "/path_to/bowtie /path_to/genome_index -p8 -v0 -k1 -S -f @in > @out" <fastq>
+    $ python3 dnapi.py "/path_to/bowtie /path_to/genome_index -p8 -v0 -k1 -S -f @in > @out" <FASTQ>
 
 [Bowtie](http://bowtie-bio.sourceforge.net) options used:
 * `-p <int>`: Number of `<int>` CPUs
@@ -103,96 +151,112 @@ The results will be printed in standard output (`stdout`). The length
 of predicted 3′ adapter sequences will be the 3′ adapter prefix match
 length specified by `-l` + 5nt.
 
-#### Options
-##### Adapter removal
-###### -l BP
-3′ adapter prefix match length. `dnapi` only considers perfect adapter
+###### --subsample-rate FLOAT
+Subsampling fraction of reads in an input FASTQ for *exhaustive* mode.
+In the default, DNApi uses all reads, i.e., `--subsample-rate 1.0`.
+Small read sets can make DNApi faster (For more detail, see [Tips for
+making the exhaustive search mode fastar]
+(https://github.com/jnktsj/DNApi/tree/master/examples#tips-for-making-the-exhaustive-search-mode-faster)).
+
+###### --output-dir DIRECTORY
+Output directory for cleansed reads after a computation of
+*exhaustive* mode. If the input FASTQ is not processed, DNApi removes
+predicted 3′ adapters from the reads and generates a FASTA file
+containing cleansed reads. In the default setting, DNApi creates the
+output in the current directory as `./dnapi_out`.
+
+###### --no-output-files
+Suppress the output of the report and the cleansed reads, and only
+display report on the screen.
+
+###### --temp-dir DIRECTORY
+Place for the temporary directory. DNApi creates a temporary directory
+during a computation of *exhaustive* mode. In the default setting, the
+program makes the directory in `/tmp`.
+
+##### Evaluation of 3′ adapter candidates
+
+###### --adapter-seq SEQ [SEQ ...]
+A list of 3′ adapter(s) for quality control.  When the option is
+specified, DNApi maps the processed reads after clipping each 3′
+adapter in every run and checks the genome mapping rate.
+
+##### Adapter removal parameters
+
+###### --prefix-match LENGTH
+3′ adapter prefix match length. DNApi only considers perfect adapter
 matches. The default is 7nt. This option affects the length of
 predicted 3′ adapter sequences in the final output.
-###### -m BP
+
+###### --min-len LENGTH
 Minimum read length to keep for mapping. Extracted small RNA reads
 will be discarded if the lengths are *shorter* than the specified
-length with `-m`. The default is 16nt.
-###### -x BP
+length with `--min-len`. The default is 16nt.
+
+###### --max-len LENGTH
 Maximum read length to keep for mapping. Extracted small RNA reads
 will be discarded if the lengths are *longer* than the specified
-length with `-x`. The default is 36nt.
-###### --trim-5p
+length with `--max-len`. The default is 36nt.
+
+###### --trim-5p LENGTH
 Trim specified number of bases from 5′ ends after adapter removal.
 This option will be combined with the adapter clipping process to
 trim down specific number of bases additionally.
-###### --trim-3p
+
+###### --trim-3p LENGTH
 Trim specified number of bases from 3′ ends after adapter removal.
 This option can be combined with the adapter clipping process to
 trim down specific number of bases additionally.
-##### Evaluation of 3′ adapter candidates
-###### -3 SEQ1,SEQ2,...
-Comma-separated list of 3′ adapter(s) for quality control.  When the
-option is specified, `dnapi` maps the processed reads after clipping
-each 3′ adapter in every run and checks the genome mapping rate.
-##### Iterative 3′ adapter search
-###### -p FLOAT
-Subsampling fraction of reads in an input FASTQ.  In the default,
-`dnapi` uses all reads, i.e., `-p 1.0`.  Small read sets can make
-`dnapi` faster.
-###### -k BEG:END:INT
-K-mers to predict a 3′ adapter in the input FASTQ. `BEG` is the smallest
-k-mer to start, `END` is the largest k-mer to end, and `INT` is an
-interval of the k-mers. The default is `9:11:2`, i.e., from 9mer to
-11mer in a 2nt interval (k = 9, 11).
-###### -r BEG:END:INT
-Cutoff ratios for filtering less abundant k-mers. As in option `-k`,
-`BEG` is the smallest ratio to start, `END` is the largest ratio to
-end, and `INT` is an interval of the ratios. The default is
-`1.2:1.4:0.1`, i.e., from 1.2 to 1.4 in a 0.1 interval (r = 1.2, 1.3,
-1.4).
-###### -o PATH
-Output directory for cleansed reads. If the input FASTQ is not
-processed, `dnapi` removes predicted 3′ adapters from the reads and
-generates a FASTA file containing cleansed reads. In the default
-setting, `dnapi` creates the output in the current directory.
-###### --temp PATH
-Path for the temporary directory. `dnapi` creates a temporary directory
-during a computation. In the default setting, the program makes the
-directory in the current directory.
+
 
 ## API
+
 You can access the adapter prediction algorithm once you import
-`dnapilib.apred` in your python program. `adapterPrediction` is the
-core function for adapter prediciton. It takes four arguments: FASTQ
-file name, filtering ratio, k-mer size, and subsampling read count. As
-the result, `adapterPrediction` returns the list of tuples containing
-predicted 3′ adapters and the assembly scores. The returned list is
-sorted by the scores.
+`dnapilib.apred` in your python
+program. `iterative_adapter_prediction` and `adapter_prediction` are
+the core function for *iterative* and *single* adapter prediciton. It
+takes four arguments: FASTQ file name, filtering ratio, k-mer size,
+and subsampling read count. As the result, the two functions return
+the list of tuples containing predicted 3′ adapters and the assembly
+scores. The returned list is sorted by the scores.
 
 ```python
-from dnapilib.apred import adapterPrediction
+from dnapilib.apred import adapter_prediction
+from dnapilib.apred import iterative_adapter_prediction
 
-# adapterPrediction(FASTQ, ratio, k-mer, subsampleReadCount)
-adapts = adapterPrediction("examples/good.fq", 1.4, 9, 50000)
+# [iterative mode]
+# iterative_adapter_prediction(FASTQ, ratios, k-mers, subsample_read_count, length_to_print=12)
+iterative_result = iterative_adapter_prediction("examples/good.fq", [1.2, 1.3, 1.4], [9, 11], 50000)
+
+# [single mode]
+# adapter_prediction(FASTQ, ratio, k-mer, subsample_read_count)
+single_result = adapter_prediction("examples/good.fq", 1.4, 9, 50000)
 
 # all predicted adapters
-print adapts
-# >> [('TGGAATTCTCGGGTGCCAAGGAACTCC', 913012)]
+print(iterative_result)
+# >> [('TGGAATTCTCGG', 200.0)]
+print(single_result)
+# >> [('TGGAATTCTCGGGTGCCAAGGAACTCC', 100.0)]
 
 # predicted adapter with the highest score
-print adapts[0][0]
+print(iterative_result[0][0])
+# >> 'TGGAATTCTCGGG'
+print(single_result[0][0])
 # >> 'TGGAATTCTCGGGTGCCAAGGAACTCC'
 ```
 
 
 ## Utilities
-In addition to `dnap` and `dnapi`, there are potentially useful three
-programs in the `utils` directory:
-
-* `qual-offset` estimates ASCII-encoded quality score offsets of FASTQ
-  files.
-* `qual-trim` trims low quality bases in input FASTQ reads. The
+In addition to DNApi, there are potentially useful three programs in
+the `utils` directory:
+* `qual-offset.py` estimates ASCII-encoded quality score offsets of
+  FASTQ files.
+* `qual-trim.py` trims low quality bases in input FASTQ reads. The
   quality trimming algorithm in the program is the same as the one in
   BWA.
-* `to-fasta` removes specified 5′ and/or 3′ adapter sequences, merges
-  identical reads while retainig the counts, and writes the collapsed
-  reads as FASTA in standard output (`stdout`).
+* `to-fasta.py` removes specified 5′ and/or 3′ adapter sequences,
+  merges identical reads while retainig the counts, and writes the
+  collapsed reads as FASTA in standard output (`stdout`).
 
 To see the usage for each program, type:
 
