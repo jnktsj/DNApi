@@ -1,59 +1,79 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
+"""Functions to handle k-mer related proceses.
 
-# Copyright 2015, 2016 Junko Tsuji
+"""
 
-# This module contains a set of functions that handle
-# K-mer related processes.
-
-import sys, re
+import sys
+import re
 from operator import itemgetter
 
-# check overlap between kmers
-def _calcOverlap(x, y, seed):
-    if not len(x) or not len(y):
+
+def _calc_overlap(x, y, seed):
+    """Return an overlapping position between a pair of k-mers.
+
+    """
+    if not x or not y:
         return 0
     for m in re.finditer(y[:seed], x):
         overlap = seed
         p = m.end()
-        if len(x) == p: return overlap
+        if len(x) == p:
+            return overlap
         tail = re.search(x[p:], y)
-        if not tail: continue
+        if not tail:
+            continue
         if tail.start() == seed:
             return tail.end()
     return 0
 
-# filter low-complexity and low-frequency kmers
-def filterKmers(kmers, kmer_len, rate):
-    cutoff = kmer_len/2
-    pa = [re.compile(c * cutoff) for c in "ACGTN"]
-    x, i = -1, -1
-    while x != len(pa):
+
+def filter_kmers(kmers, kmer_len, rate):
+    """Return a clean set of k-mers in tuple.
+
+       Filter low-complexity and low-frequency kmers.
+    """
+    low_comp = [re.compile(base * (kmer_len//2)) for base in "ACGTN"]
+    i, x = -1, -1
+    while x != len(low_comp):
         i += 1
-        x = sum([not p.findall(kmers[i][0]) for p in pa])
-    max_hits = float(kmers[i][1])
+        x = sum([not p.findall(kmers[i][0]) for p in low_comp])
+    max_hits = kmers[i][1]
 
     clean = []
+    total = 0
     for s, n in kmers[i:]:
-        x = sum([not p.findall(s) for p in pa])
-        if x != len(pa): continue
-        if max_hits/n > rate: break
+        if sum([not p.findall(s) for p in low_comp]) != len(low_comp):
+            continue
+        if float(max_hits)/n > rate:
+            break
         clean.append((s, n))
-    return clean
+        total += n
+    return [(s, round(float(n)/total*100, 4)) for s, n in clean]
 
-# assemble kmers with exhausitve way
-def assembleKmers(kmers, seed):
+
+def assemble_kmers(kmers, seed):
+    """Return assembled k-mers and the frequency in tuple.
+
+       Assemble given k-mers by checking suffix-prefix matches.
+    """
     pre_l, new_l = 0, len(kmers)
     while pre_l != new_l:
         pre_l = len(kmers)
-        for i in xrange(pre_l):
+        for i in range(pre_l):
             kmer, hits = kmers[i]
-            if not hits: continue
+            if not hits:
+                continue
             max_o, max_j = 0, 0
-            for j in xrange(pre_l):
-                if i == j: continue
-                o = _calcOverlap(kmer, kmers[j][0], seed)
-                if o > max_o: max_o, max_j = o, j
+            for j in range(pre_l):
+                if i == j:
+                    continue
+                if kmers[j][0] in kmer:
+                    hits += kmers[j][1]
+                    kmers[i] = (kmer, hits)
+                    kmers[j] = ('', 0)
+                    continue
+                overlap = _calc_overlap(kmer, kmers[j][0], seed)
+                if overlap > max_o:
+                    max_o, max_j = overlap, j
             if max_o > 0:
                 kmer += kmers[max_j][0][max_o:]
                 hits += kmers[max_j][1]
@@ -63,14 +83,17 @@ def assembleKmers(kmers, seed):
         new_l = len(kmers)
     return kmers
 
-# count kmers
-def countKmers(fIn, kmer_len, sample_num):
+
+def count_kmers(seq_list, kmer_len, sample_num):
+    """Return sorted k-mer frequency.
+
+    """
     freq = {}
-    for cnt, seq in enumerate(fIn):
-        if cnt == sample_num: break
-        l = len(seq)
-        for i in xrange(l - kmer_len + 1):
-            kmer = seq[i:i+kmer_len]
+    for cnt, seq in enumerate(seq_list):
+        if cnt == sample_num:
+            break
+        interval = len(seq) - kmer_len + 1
+        for i in range(interval):
+            kmer = seq[i : i+kmer_len]
             freq[kmer] = freq.get(kmer, 0) + 1
-    freq = sorted(freq.items(), key=itemgetter(1), reverse=True)
-    return freq
+    return sorted(freq.items(), key=itemgetter(1), reverse=True)
