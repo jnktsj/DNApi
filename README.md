@@ -71,9 +71,12 @@ running the algorithm multiple times with different combinations of
 incorporating adapter removal and read mapping. Only this mode can
 judge whether input libraries are already clean (i.e. the 3′ adapter
 sequences are already removed). To turn on this mode, you need to run
-with [`--map-command`](https://github.com/jnktsj/DNApi#--map-command-command).
+with
+[`--map-command`](https://github.com/jnktsj/DNApi#--map-command-command)
+(For more detail, see
+[Options](https://github.com/jnktsj/DNApi#options)).
 
-    $ python3 dnapi.py --map-command <command> <fastq>
+    $ python3 dnapi.py --map-command "<command>" <fastq>
 
 You can also incorporate `-k` and `-r`. The default setting is
 `-k 9:11:2` and `-r 1.2:1.4:0.1`.
@@ -86,7 +89,7 @@ If a 3′adapter sequence is specified with `--adapter-seq`, DNApi
 only executes quality control using a given genome mapping
 command.
 
-    $ python3 dnapi.py --map-command <command> --adapter-seq SEQ1 [SEQ2 SEQ3...] <fastq>
+    $ python3 dnapi.py --map-command "<command>" --adapter-seq SEQ1 [SEQ2 SEQ3...] <fastq>
 
 DNApi judges the input FASTQ quality is poor when the mapping rate is
 below 20%.
