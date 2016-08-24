@@ -231,8 +231,6 @@ def main():
 
 if __name__ == "__main__":
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
-    if sys.version_info.major <= 2:
-        raise ValueError("DNApi requires python version 3 or higher")
     try:
         main()
     except KeyboardInterrupt:
