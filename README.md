@@ -12,18 +12,18 @@ or
 
     $ <process-generates-fastq> | python dnapi.py -
 
-To see the usage for each program, type:
+To see the detailed usage, type:
 
     $ python dnapi.py [-h | --help]
-
-For quick examples, see:
-[Examples](https://github.com/jnktsj/DNApi/tree/master/examples#examples)
 
 DNApi can predict most 3′ adapters correctly with the default
 parameters. However, if you want to tweak the parameters or want to
 run other prediction modes, see [prediction modes and parameters]
 (https://github.com/jnktsj/DNApi#prediction-modes-and-parameters) for
 mode defail.
+
+For quick examples and case studies, see:
+[Examples](https://github.com/jnktsj/DNApi/tree/master/examples#examples)
 
 
 ## Miscellaneous
