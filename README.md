@@ -14,17 +14,19 @@ or
 
 To see the usage for each program, type:
 
-    $ python3 dnapi.py [-h | --help]
+    $ python dnapi.py [-h | --help]
 
-DNApi can predict most 3′ adapters correctly with the default
-parameters. However, if you want to tweak the parameters or want to
-run other prediction modes, see [Prediction modes]
-(https://github.com/jnktsj/DNApi#prediction-modes) for mode defail.
-
-## Miscellaneous
 For quick examples, see:
 [Examples](https://github.com/jnktsj/DNApi/tree/master/examples#examples)
 
+DNApi can predict most 3′ adapters correctly with the default
+parameters. However, if you want to tweak the parameters or want to
+run other prediction modes, see [prediction modes and parameters]
+(https://github.com/jnktsj/DNApi#prediction-modes-and-parameters) for
+mode defail.
+
+
+## Miscellaneous
 For other useful utilities, see:
 [Utilities](https://github.com/jnktsj/DNApi#utilities)
 
@@ -35,7 +37,8 @@ Of course, (sadly) there are some limitations on 3′ adapter prediction
 although DNApi gives near-perfect results. For the information, see:
 [Limitations](https://github.com/jnktsj/DNApi#limitations)
 
-#### Prediction modes
+
+## Prediction modes and parameters
 The package covers three ways (hereafter modes) to predict adapters.
 The prediction algorithm needs two main parameters
 [`-k`](https://github.com/jnktsj/DNApi#-k-kmer_begkmer_endincrement--kmer_len)

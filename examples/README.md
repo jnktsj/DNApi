@@ -10,7 +10,7 @@ This direcotry contains the following example FASTQ files:
 To predict the 3′ adapter sequence in `good.fq`, type:
 
 ```shell
-$ python3 dnapi.py good.fq
+$ python dnapi.py good.fq
 # you will get: TGGAATTCTCGG
 ```
 
@@ -18,7 +18,7 @@ The default setting is *iterative* search mode. If you want to use
 different k-mer sizes and filtering ratios, type:
 
 ```shell
-$ python3 dnapi.py -k 8:11:1 -r 1.1:1.4:0.1 good.fq
+$ python dnapi.py -k 8:11:1 -r 1.1:1.4:0.1 good.fq
 # you will get: TGGAATTCTCGG
 ```
 
@@ -26,7 +26,7 @@ If you want to see all predicted adapter candidates from the run, you
 can add `--show-all` like below:
 
 ```shell
-$ python3 dnapi.py --show-all poor.fq
+$ python dnapi.py --show-all poor.fq
 # you will get:
 # CGCCTTGGCCGT    score=200.00
 # AGCAGAAGGGG     score=30.25
@@ -39,7 +39,7 @@ If you want to use only a single combination of k-mer size and
 filtering ratio (i.e. *single* search mode), type:
 
 ```shell
-$ python3 dnapi.py -k 9 -r 1.4 good.fq
+$ python dnapi.py -k 9 -r 1.4 good.fq
 # you will get: TGGAATTCTCGGGTGCCAAGGAACTCC
 ```
 
@@ -68,7 +68,7 @@ bowtie-build hg38.fa <index_name>
 ##### Case 1: `good.fq`
 With the following command:
 
-    $ python3 dnapi.py --map-command "/path_to/bowtie /path_to/genome_index -p <cpu_num> -v0 -k1 -S -f @in > @out" good.fq
+    $ python dnapi.py --map-command "/path_to/bowtie /path_to/genome_index -p <cpu_num> -v0 -k1 -S -f @in > @out" good.fq
 
 You will get:
 
@@ -118,7 +118,7 @@ directly input the sequences with `--adapter-seq`. Using the option,
 the following command shows the example of evaluating three adapter
 sequences:
 
-    $ python3 dnapi.py --adapter-seq TGGAATTCTCGG TAATACTGCCTG CGCCTTGGCCGT --map-command "/path_to/bowtie /path_to/genome_index -p <cpu_num> -v0 -k1 -S -f @in > @out" good.fq
+    $ python dnapi.py --adapter-seq TGGAATTCTCGG TAATACTGCCTG CGCCTTGGCCGT --map-command "/path_to/bowtie /path_to/genome_index -p <cpu_num> -v0 -k1 -S -f @in > @out" good.fq
 
 From the above command, You will get:
 
@@ -153,7 +153,7 @@ if [ ${TOTAL_READS} -gt ${SUBSAMPLE_READS} ]; then
 fi
 
 # Input the subsample rate with -p to DNApi
-python3 dnapi.py --subsample-rate ${SUBSAMPLE_RATE} --map-command "${MAPCMD}" ${FASTQ}
+python dnapi.py --subsample-rate ${SUBSAMPLE_RATE} --map-command "${MAPCMD}" ${FASTQ}
 ````
 
 One caveat is that the output FASTA will be based on **only subsampled
