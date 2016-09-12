@@ -1,10 +1,27 @@
 # DNApi <sub>(version: 1.1)<sub>
-*de novo* adapter prediction (iterative) algorithm for small RNA sequencing data.
+*de novo* adapter prediction (iterative) algorithm for small RNA
+sequencing data. DNApi requires Python (2 or 3) under a Linux/Unix
+environment.
 
-## Introduction
-DNApi is a software package that predicts 3′ adapter sequences *de
-novo* to process any small RNA libraries.
+DNApi accept (un)compressed FASTQ files or redirected standard input
+(`stdin`) as an input. You can simply run:
 
+    $ python dnapi.py <fastq>
+
+or
+
+    $ <process-generates-fastq> | python dnapi.py -
+
+To see the usage for each program, type:
+
+    $ python3 dnapi.py [-h | --help]
+
+DNApi can predict most 3′ adapters correctly with the default
+parameters. However, if you want to tweak the parameters or want to
+run other prediction modes, see [Prediction modes]
+(https://github.com/jnktsj/DNApi#prediction-modes) for mode defail.
+
+## Miscellaneous
 For quick examples, see:
 [Examples](https://github.com/jnktsj/DNApi/tree/master/examples#examples)
 
@@ -17,27 +34,6 @@ program, see: [API](https://github.com/jnktsj/DNApi#api)
 Of course, (sadly) there are some limitations on 3′ adapter prediction
 although DNApi gives near-perfect results. For the information, see:
 [Limitations](https://github.com/jnktsj/DNApi#limitations)
-
-
-## Requirement
-DNApi requires Python 3.x under a Linux/Unix environment.
-
-
-## Usage
-To see the usage for each program, type:
-
-    $ python3 dnapi.py [-h | --help]
-
-DNApi accept (un)compressed FASTQ files or redirected standard input
-(`stdin`) as an input.
-
-You can simply run:
-
-    $ python3 dnapi.py <fastq>
-
-or
-
-    $ <process-generates-fastq> | python3 dnapi.py -
 
 #### Prediction modes
 The package covers three ways (hereafter modes) to predict adapters.
