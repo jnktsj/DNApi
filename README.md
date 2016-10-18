@@ -271,3 +271,9 @@ DNApi has a few limitations on 3′ adapter prediction:
 * Prediction accuracy will drop if gel-extracted lengths of RNAs are
   long enough to be sequenced, i.e. if few 3′ adapters are in FASTQ.
 * DNApi can't do demultiplexing.
+
+## Citation
+If you use DNApi in your publications, please cite:
+
+Tsuji J, Weng Z. (2016) **DNApi: A De Novo Adapter Prediction Algorithm for Small
+RNA Sequencing Data.** *PLoS One* 11(10):e0164228. [[article](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0164228)]
